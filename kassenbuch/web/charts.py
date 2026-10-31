@@ -1,6 +1,7 @@
 """
 Small server-side SVG charts: no JavaScript library, no external requests.
-Hovering a bar or point shows its value (SVG <title>). Colours come from CSS classes.
+Hovering shows the value at the mouse position (static/chart.js, from the data-* attributes);
+without JavaScript the SVG <title> of each bar or point remains. Colours come from CSS classes.
 """
 
 from datetime import date
@@ -57,11 +58,19 @@ def bar_chart(bars: list[tuple[str, int, str]]) -> Markup:
     for n, (label, value, tooltip) in enumerate(bars):
         x = PAD_LEFT + n * slot + slot * 0.15
         parts.append(f'<rect class="bar" x="{x:.1f}" y="{y(value):.1f}" width="{slot * 0.7:.1f}" '
-                     f'height="{max(0, y(0) - y(value)):.1f}"><title>{escape(tooltip)}</title></rect>')
+                     f'height="{max(0, y(0) - y(value)):.1f}" data-x0="{PAD_LEFT + n * slot:.1f}" '
+                     f'data-x1="{PAD_LEFT + (n + 1) * slot:.1f}" data-tip="{escape(tooltip)}">'
+                     f'<title>{escape(tooltip)}</title></rect>')
         if n % label_every == 0:
             parts.append(f'<text class="axis" x="{x + slot * 0.35:.1f}" y="{HEIGHT - 8}" '
                          f'text-anchor="middle">{escape(label)}</text>')
-    return Markup(f'<svg class="chart" viewBox="0 0 {WIDTH} {HEIGHT}" role="img">{"".join(parts)}</svg>')
+    return _svg("bar", parts)
+
+
+def _svg(kind: str, parts: list[str]) -> Markup:
+    return Markup(f'<div class="chart-wrap"><svg class="chart" data-chart="{kind}" viewBox="0 0 {WIDTH} {HEIGHT}" '
+                  f'data-top="{PAD_TOP}" data-bottom="{HEIGHT - PAD_BOTTOM}" data-left="{PAD_LEFT}" '
+                  f'data-right="{WIDTH - PAD_RIGHT}" role="img">{"".join(parts)}</svg></div>')
 
 
 def line_chart(series: list[tuple[str, list[tuple[str, int, str]], bool]]) -> Markup:
@@ -96,10 +105,12 @@ def line_chart(series: list[tuple[str, list[tuple[str, int, str]], bool]]) -> Ma
                 path.append(f"H{x(day):.1f}V{y(value):.1f}")
             parts.append(f'<path class="line {css_class}" d="{"".join(path)}"/>')
         for day, value, tooltip in points:
-            parts.append(f'<circle class="point {css_class}" cx="{x(day):.1f}" cy="{y(value):.1f}" r="3.5">'
+            # data-step: the value holds until the next point (price line); otherwise a single event
+            parts.append(f'<circle class="point {css_class}" cx="{x(day):.1f}" cy="{y(value):.1f}" r="3.5" '
+                         f'data-series="{css_class}" data-step="{int(draw_line)}" data-tip="{escape(tooltip)}">'
                          f'<title>{escape(tooltip)}</title></circle>')
     for iso in (min(points_all)[0], max(points_all)[0]):
         anchor = "start" if iso == min(points_all)[0] else "end"
         parts.append(f'<text class="axis" x="{x(iso):.1f}" y="{HEIGHT - 8}" text-anchor="{anchor}">'
                      f'{escape(iso[8:10] + "." + iso[5:7] + "." + iso[:4])}</text>')
-    return Markup(f'<svg class="chart" viewBox="0 0 {WIDTH} {HEIGHT}" role="img">{"".join(parts)}</svg>')
+    return _svg("line", parts)
