@@ -26,21 +26,22 @@ jobs:
   build-and-push:
     needs: test
     runs-on: ubuntu-latest
+    permissions:
+      packages: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Private repo: the image goes to the self-hosted registry, which the servers are logged in to
-      - name: Login to registry.smol.uk
+      - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          registry: registry.smol.uk
-          username: ${{ secrets.REGISTRY_USERNAME }}
-          password: ${{ secrets.REGISTRY_PASSWORD }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
-          tags: registry.smol.uk/kassenbuch:latest
+          tags: ghcr.io/${{ github.repository }}:latest
