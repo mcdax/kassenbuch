@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}{{ product.name }}{% endblock %}
+{% block period %}{% endblock %}
+{% block content %}
+<p><a href="{{ link('/products') }}">← Produkte</a></p>
+<h1>{{ product.name }} <small>Artikel {{ product.article_id }}{% if account %} · {{ account }}{% endif %}</small></h1>
+
+{% set first = product.purchases[0] %}
+{% set last = product.purchases[-1] %}
+<section class="tiles">
+  <div class="tile"><span class="label">Käufe</span><span class="value">{{ product.purchases|length }}</span>
+    <span class="hint">seit {{ first.purchased_at|date }}</span></div>
+  <div class="tile"><span class="label">Menge</span><span class="value">{{ product.quantity|quantity(product.unit) }}</span></div>
+  <div class="tile"><span class="label">Ausgaben</span><span class="value">{{ product.spent_cents|euro }}</span></div>
+  <div class="tile"><span class="label">Preis pro {{ unit }}</span>
+    <span class="value">{% if last.unit_price_cents %}{{ last.unit_price_cents|euro }}{% endif %}</span>
+    {% if first.unit_price_cents and last.unit_price_cents and first.unit_price_cents != last.unit_price_cents %}
+    {% set change = (last.unit_price_cents - first.unit_price_cents) / first.unit_price_cents * 100 %}
+    <span class="hint {% if change > 0 %}bad{% else %}good{% endif %}">{{ '%+.0f'|format(change) }} % seit {{ first.purchased_at|date }} ({{ first.unit_price_cents|euro }})</span>
+    {% endif %}</div>
+</section>
+
+<section class="card">
+  <h2>Preisverlauf pro {{ unit }}</h2>
+  {{ chart }}
+  <p class="legend"><span class="key regular"></span> Normalpreis
+    {% if has_discounts %}<span class="key dot paid"></span> Kauf mit Rabatt: tatsächlich bezahlt{% endif %}</p>
+</section>
+
+<section class="card">
+  <h2>Käufe</h2>
+  <table class="list">
+    <thead><tr><th>Datum</th>{% if not account %}<th>Konto</th>{% endif %}<th class="num">Menge</th>
+      <th class="num">Normalpreis</th><th class="num">Bezahlt</th></tr></thead>
+    <tbody>
+    {% for p in product.purchases|reverse %}
+    <tr>
+      <td><a href="{{ link('/receipts/' ~ p.receipt_id) }}">{{ p.purchased_at|date(true) }}</a></td>
+      {% if not account %}<td>{{ p.account }}</td>{% endif %}
+      <td class="num">{{ p.quantity|quantity(p.unit) }}</td>
+      <td class="num">{% if p.unit_price_cents %}{{ p.unit_price_cents|euro }}{% endif %}</td>
+      <td class="num {% if p.net_cents < p.amount_cents %}good{% endif %}">{{ p.net_cents|euro }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

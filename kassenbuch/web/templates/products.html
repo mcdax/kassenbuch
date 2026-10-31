@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Produkte{% endblock %}
+{% block content %}
+<h1>Produkte <small>{{ period.label }}{% if account %} · {{ account }}{% endif %}</small></h1>
+
+<form class="search" method="get" action="/products">
+  {% if account %}<input type="hidden" name="account" value="{{ account }}">{% endif %}
+  {% if period.key != '12m' %}<input type="hidden" name="period" value="{{ period.key }}">{% endif %}
+  <input type="hidden" name="sort" value="{{ sort }}">
+  <input type="search" name="q" value="{{ q }}" placeholder="Produkt suchen …" aria-label="Produkt suchen">
+  <button type="submit">Suchen</button>
+</form>
+
+{% if not products %}
+<p class="empty">Keine Produkte gefunden.</p>
+{% else %}
+<section class="card">
+  <table class="list">
+    <thead><tr>
+      {% macro sort_link(key, label, cls='') %}<th class="{{ cls }}"><a href="{{ link('/products', sort=key, q=q or None) }}" {% if sort == key %}aria-current="true"{% endif %}>{{ label }}</a></th>{% endmacro %}
+      {{ sort_link('name', 'Produkt') }}
+      {{ sort_link('count', 'Käufe', 'num') }}
+      <th class="num">Menge</th>
+      {{ sort_link('spent', 'Ausgaben', 'num') }}
+      <th class="num">Aktueller Preis</th>
+      {{ sort_link('price', 'Preisänderung', 'num') }}
+      <th class="num">Zuletzt</th>
+    </tr></thead>
+    <tbody>
+    {% for p in products %}
+    <tr>
+      <td><a href="{{ link('/products/' ~ p.article_id) }}">{{ p.name }}</a></td>
+      <td class="num">{{ p.purchases }}</td>
+      <td class="num">{{ p.quantity|quantity(p.unit) }}</td>
+      <td class="num">{{ p.spent_cents|euro }}</td>
+      <td class="num">{% if p.last_price_cents %}{{ p.last_price_cents|euro }}{% if p.unit == 'kg' %}/kg{% endif %}{% endif %}</td>
+      <td class="num {% if p.price_change and p.price_change > 0 %}bad{% elif p.price_change and p.price_change < 0 %}good{% endif %}">
+        {% if p.price_change %}{{ '%+.0f'|format(p.price_change * 100) }} %{% endif %}</td>
+      <td class="num">{{ p.last_purchase|date }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+{% endblock %}

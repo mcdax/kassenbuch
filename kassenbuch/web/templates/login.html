@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Anmelden · Kassenbuch</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="login">
+<form class="card" method="post" action="/login">
+  <h1>🧾 Kassenbuch</h1>
+  {% if failed %}<p class="notice">Falsches Passwort.</p>{% endif %}
+  <input type="hidden" name="next" value="{{ next }}">
+  <label for="password">Passwort</label>
+  <input id="password" type="password" name="password" autocomplete="current-password" required autofocus>
+  <button type="submit">Anmelden</button>
+</form>
+</body>
+</html>

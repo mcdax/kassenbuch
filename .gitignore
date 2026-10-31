@@ -1,0 +1,8 @@
+# Receipts database and login tokens - personal data and secrets
+data/
+.env
+
+.venv/
+__pycache__/
+*.egg-info/
+.pytest_cache/

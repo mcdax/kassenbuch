@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{% endblock %} · Kassenbuch</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="{{ link('/') }}">🧾 Kassenbuch</a>
+  <nav>
+    {% set path = request.url.path %}
+    <a href="{{ link('/') }}" {% if path == '/' %}aria-current="page"{% endif %}>Übersicht</a>
+    <a href="{{ link('/receipts') }}" {% if path.startswith('/receipts') %}aria-current="page"{% endif %}>Einkäufe</a>
+    <a href="{{ link('/products') }}" {% if path.startswith('/products') %}aria-current="page"{% endif %}>Produkte</a>
+  </nav>
+  {% if login_enabled() %}
+  <form method="post" action="/logout"><button class="plain" type="submit">Abmelden</button></form>
+  {% endif %}
+</header>
+
+<main>
+  {% block filters %}
+  <div class="filters">
+    {% if accounts|length > 1 %}
+    <div class="chips" aria-label="Konto">
+      <a href="{{ link(request.url.path, account=None) }}" {% if not account %}aria-current="true"{% endif %}>Alle Konten</a>
+      {% for a in accounts %}
+      <a href="{{ link(request.url.path, account=a) }}" {% if account == a %}aria-current="true"{% endif %}>{{ a }}</a>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% block period %}
+    <div class="chips" aria-label="Zeitraum">
+      <a href="{{ link(request.url.path, period=None) }}" {% if period.key == '12m' %}aria-current="true"{% endif %}>Letzte 12 Monate</a>
+      {% for y in years %}
+      <a href="{{ link(request.url.path, period=y) }}" {% if period.key == y %}aria-current="true"{% endif %}>{{ y }}</a>
+      {% endfor %}
+      <a href="{{ link(request.url.path, period='all') }}" {% if period.key == 'all' %}aria-current="true"{% endif %}>Alles</a>
+    </div>
+    {% endblock %}
+  </div>
+  {% endblock %}
+
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>

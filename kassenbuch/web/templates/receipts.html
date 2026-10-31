@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Einkäufe{% endblock %}
+{% block content %}
+<h1>Einkäufe <small>{{ period.label }}{% if account %} · {{ account }}{% endif %}</small></h1>
+
+{% if not receipts %}
+<p class="empty">Keine Einkäufe in diesem Zeitraum.</p>
+{% else %}
+<section class="card">
+  <table class="list">
+    <thead><tr><th>Datum</th>{% if not account %}<th>Konto</th>{% endif %}<th>Filiale</th>
+      <th class="num">Artikel</th><th class="num">Gespart</th><th class="num">Betrag</th></tr></thead>
+    <tbody>
+    {% for r in receipts %}
+    <tr>
+      <td><a href="{{ link('/receipts/' ~ r.id) }}">{{ r.purchased_at|date(true) }}</a>
+        {% if r.warnings %}<span class="warn" title="{{ r.warnings }}">⚠</span>{% endif %}</td>
+      {% if not account %}<td>{{ r.account }}</td>{% endif %}
+      <td>{{ r.store_locality or r.store_name or '' }}</td>
+      <td class="num">{{ r.items }}</td>
+      <td class="num good">{% if r.savings_cents > 0 %}{{ r.savings_cents|euro }}{% endif %}</td>
+      <td class="num strong">{{ r.total_cents|euro }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+{% endblock %}

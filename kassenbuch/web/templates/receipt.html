@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Kassenbon {{ receipt.purchased_at|date }}{% endblock %}
+{% block filters %}{% endblock %}
+{% block content %}
+<p><a href="{{ link('/receipts') }}">← Einkäufe</a></p>
+<h1>{{ receipt.purchased_at|date(true) }} <small>{{ receipt.store_name or 'Lidl' }}{% if receipt.store_address %}, {{ receipt.store_address }}{% endif %} · {{ receipt.account }}</small></h1>
+
+{% if receipt.warnings %}
+<p class="notice">⚠ Dieser Kassenbon ließ sich nicht vollständig auswerten:<br>{{ receipt.warnings }}</p>
+{% endif %}
+
+<div class="columns receipt">
+  <section class="card">
+    <table>
+      <thead><tr><th>Artikel</th><th class="num">Menge</th><th class="num">Preis</th><th class="num">Betrag</th></tr></thead>
+      <tbody>
+      {% for i in items %}
+      <tr>
+        <td>{% if i.article_id and not i.is_deposit %}<a href="{{ link('/products/' ~ i.article_id) }}">{{ i.name }}</a>{% else %}{{ i.name }}{% endif %}</td>
+        <td class="num">{{ i.quantity|quantity(i.unit) }}</td>
+        <td class="num">{% if i.unit_price_cents %}{{ i.unit_price_cents|euro }}{% endif %}</td>
+        <td class="num">{{ i.amount_cents|euro }}</td>
+      </tr>
+      {% for d in i.discounts %}
+      <tr class="discount"><td colspan="3">{{ d.description }} <small>{{ kinds.get(d.kind, d.kind) }}</small></td>
+        <td class="num">{{ d.amount_cents|euro }}</td></tr>
+      {% endfor %}
+      {% endfor %}
+      {% for d in unassigned_discounts %}
+      <tr class="discount"><td colspan="3">{{ d.description }}</td><td class="num">{{ d.amount_cents|euro }}</td></tr>
+      {% endfor %}
+      </tbody>
+      <tfoot>
+      {% if savings_cents > 0 %}<tr><td colspan="3">Gespart</td><td class="num good">{{ savings_cents|euro }}</td></tr>{% endif %}
+      <tr class="strong"><td colspan="3">Bezahlt</td><td class="num">{{ receipt.total_cents|euro }}</td></tr>
+      {% for p in payments %}<tr class="muted"><td colspan="3">{{ p.method }}</td><td class="num">{{ p.amount_cents|euro }}</td></tr>{% endfor %}
+      </tfoot>
+    </table>
+    {% if taxes %}
+    <p class="hint">{% for t in taxes %}{{ t.rate|int }} % MwSt. auf {{ t.gross_cents|euro }}{% if not loop.last %} · {% endif %}{% endfor %}</p>
+    {% endif %}
+  </section>
+
+  {% if receipt.html %}
+  <section class="card original">
+    <div class="card-head">
+      <h2>Original</h2>
+      <a class="button" href="/receipts/{{ receipt.id }}/original" target="_blank" rel="noopener">Drucken / PDF</a>
+    </div>
+    <iframe src="/receipts/{{ receipt.id }}/original?embed=1" sandbox title="Original-Kassenbon"></iframe>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,52 @@
+# Kassenbuch: poller (new purchases, notifications) and web interface.
+#
+# 1. Log in once per account (see README), e.g. on the desktop: kassenbuch login anna
+#    or on a server: docker compose run --rm poller login-start anna / login-finish
+# 2. cp .env.example .env && chmod 600 .env   (notifications, web password)
+# 3. docker compose up -d --build
+
+x-common: &common
+  build: .
+  # Owner of ./data, so the files stay yours (check with: id -u; id -g)
+  user: "1000:1000"
+  # Small init process as PID 1, so containers stop right away
+  init: true
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  poller:
+    <<: *common
+    command: ["poll"]
+    volumes:
+      - ./data:/data
+    environment:
+      TZ: Europe/Berlin
+      POLL_INTERVAL_MINUTES: "15"
+      FULL_SYNC_HOURS: "6"
+      # Secrets come from .env (docker compose reads it automatically)
+      NOTIFY_NEW_RECEIPTS: ${NOTIFY_NEW_RECEIPTS:-true}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+      NTFY_URL: ${NTFY_URL:-}
+
+  web:
+    <<: *common
+    command: ["serve", "--host", "0.0.0.0", "--port", "8080"]
+    # Only the database - the web interface never sees the login tokens
+    volumes:
+      - ./data/db:/data/db
+    environment:
+      TZ: Europe/Berlin
+      WEB_PASSWORD: ${WEB_PASSWORD:-}
+    # Only reachable from this machine; for other devices put it behind a reverse proxy (with WEB_PASSWORD set)
+    ports:
+      - "127.0.0.1:${WEB_PORT:-8503}:8080"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/healthz')"]
+      interval: 1m
+      timeout: 5s

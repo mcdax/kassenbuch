@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Übersicht{% endblock %}
+{% block content %}
+<h1>{{ period.label }}{% if account %} · {{ account }}{% endif %}</h1>
+
+{% if not o.receipts %}
+<p class="empty">Keine Einkäufe in diesem Zeitraum.</p>
+{% else %}
+<section class="tiles">
+  <div class="tile"><span class="label">Ausgaben</span><span class="value">{{ o.spent_cents|euro }}</span></div>
+  <div class="tile"><span class="label">Einkäufe</span><span class="value">{{ o.receipts }}</span>
+    <span class="hint">Ø {{ o.average_cents|euro }}</span></div>
+  <div class="tile"><span class="label">Gespart</span><span class="value good">{{ o.savings_cents|euro }}</span>
+    <span class="hint">{% for kind, cents in o.savings_by_kind.items() %}{{ kinds.get(kind, kind) }} {{ cents|euro }}{% if not loop.last %} · {% endif %}{% endfor %}</span></div>
+  <div class="tile"><span class="label">Pfand-Saldo</span><span class="value">{{ o.deposit_net_cents|euro }}</span>
+    <span class="hint">bezahlt minus zurückgegeben</span></div>
+</section>
+
+<section class="card">
+  <h2>Ausgaben pro Monat</h2>
+  {{ chart }}
+</section>
+
+<div class="columns">
+  <section class="card">
+    <h2>Nach Steuersatz</h2>
+    {% set total = o.by_tax_rate|sum(attribute=1) %}
+    {% for rate, cents in o.by_tax_rate %}
+    <div class="share">
+      <div class="share-label">
+        <span>{{ rate|int }} % {% if rate == 7 %}<small>überwiegend Lebensmittel</small>{% elif rate == 19 %}<small>Non-Food, viele Getränke</small>{% endif %}</span>
+        <span>{{ cents|euro }}</span>
+      </div>
+      <progress max="{{ total }}" value="{{ cents }}"></progress>
+    </div>
+    {% endfor %}
+    <p class="hint">Lidl druckt keine Warengruppen auf den Bon. Der Steuersatz ist die beste Näherung:
+      7 % gilt für die meisten Lebensmittel, 19 % für Non-Food und z. B. Säfte und Softdrinks.</p>
+  </section>
+
+  <section class="card">
+    <h2>Meistgekauft</h2>
+    <table>
+      <thead><tr><th>Produkt</th><th class="num">Käufe</th><th class="num">Ausgaben</th></tr></thead>
+      <tbody>
+      {% for p in o.top_by_count %}
+      <tr><td><a href="{{ link('/products/' ~ p.article_id) }}">{{ p.name }}</a></td>
+        <td class="num">{{ p.purchases }}</td><td class="num">{{ p.spent_cents|euro }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+</div>
+
+<section class="card">
+  <h2>Größte Ausgabenposten</h2>
+  <table>
+    <thead><tr><th>Produkt</th><th class="num">Käufe</th><th class="num">Menge</th><th class="num">Ausgaben</th></tr></thead>
+    <tbody>
+    {% for p in o.top_by_spend %}
+    <tr><td><a href="{{ link('/products/' ~ p.article_id) }}">{{ p.name }}</a></td><td class="num">{{ p.purchases }}</td>
+      <td class="num">{{ p.quantity|quantity(p.unit) }}</td><td class="num">{{ p.spent_cents|euro }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+{% endblock %}

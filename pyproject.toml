@@ -1,0 +1,37 @@
+[project]
+name = "kassenbuch"
+version = "0.1.0"
+description = "Keeps your Lidl Plus receipts: import, analysis, price history and purchase notifications"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+dependencies = [
+    "requests>=2.31",
+    "beautifulsoup4>=4.12",
+    "fastapi>=0.110",
+    "uvicorn>=0.29",
+    "jinja2>=3.1",
+    "itsdangerous>=2.1",
+    "python-multipart>=0.0.9",
+]
+
+[project.optional-dependencies]
+# Login window for the desktop (not needed on a server)
+login = ["PySide6>=6.6"]
+dev = ["pytest>=8", "httpx>=0.27"]
+
+[project.scripts]
+kassenbuch = "kassenbuch.cli:main"
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["kassenbuch*"]
+
+[tool.setuptools.package-data]
+"kassenbuch.web" = ["templates/*.html", "static/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
